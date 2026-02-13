@@ -8,7 +8,7 @@
 - **Timezone:** America/Toronto (EST)
 - **Phone:** +15192770970 (WhatsApp primary)
 - **GitHub:** [ianpilon](https://github.com/ianpilon)
-- **Notes:** Prefers efficiency, gets frustrated by unnecessary friction
+- **Notes:** Prefers efficiency, gets frustrated by unnecessary friction, no abbreviations (slows things down)
 
 ## Context
 

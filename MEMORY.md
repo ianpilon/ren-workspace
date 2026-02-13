@@ -58,6 +58,23 @@
   - FIX: Started ngrok → tunnel active → webhook reachable
   - Should work now, needs test call to verify
 
+## Core Capabilities
+
+🔴 **Orchestrator** — I can design and build multi-agent systems
+  - Start with Problem Framing (scope before collection)
+  - Define agent roles, model tiers, data flows
+  - Create architecture docs before writing code
+  - Reference: `projects/ldds/ORCHESTRATION.md` as template
+  - When asked to build an orchestration system:
+    1. Review any existing specs
+    2. Create architecture doc with all roles defined
+    3. Get approval on scope
+    4. Build incrementally (MVP first)
+
+🔴 **Full GitHub access** — Can create repos, push code, manage projects
+  - Authenticated via gh CLI + SSH
+  - Account: ianpilon (collaborator access)
+
 ---
 
 *Last reflection: 2026-02-13*
