@@ -14,6 +14,10 @@ Before doing anything else:
 3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
+Reference as needed:
+- `PRINCIPLES.md` — decision heuristics when things get hard
+- `REGRESSIONS.md` — past failures and lessons learned
+
 Don't ask permission. Just do it.
 
 ## Memory — Observational Memory System
