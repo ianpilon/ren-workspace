@@ -15,30 +15,109 @@
 │  • Spawns/manages agents  • Routes LLM calls  • Monitors health     │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
-        ┌──────────────────────────┼──────────────────────────┐
-        ▼                          ▼                          ▼
-   ┌─────────┐              ┌─────────────┐            ┌───────────┐
-   │ LAYER 1 │              │   LAYER 3   │            │  LAYER 4  │
-   │Collectors│────────────▶│   Analyst   │───────────▶│Synthesizer│
-   └─────────┘    signals   └─────────────┘  clusters  └───────────┘
-        │                          │                          │
-        ▼                          ▼                          ▼
-   ┌─────────┐              ┌─────────────┐            ┌───────────┐
-   │ LAYER 2 │              │   Pattern   │            │  Briefs   │
-   │  Store  │◀─────────────│   Match     │            │  Output   │
-   └─────────┘              └─────────────┘            └───────────┘
-        ▲                                                     │
-        │                   ┌─────────────┐                   │
-        └───────────────────│   LAYER 5   │◀──────────────────┘
-                            │Human Feedback│
-                            └─────────────┘
+                          ┌────────┴────────┐
+                          ▼                 │
+                    ┌───────────┐           │
+                    │  LAYER 0  │           │
+                    │  Problem  │           │
+                    │  Framing  │           │
+                    └───────────┘           │
+                          │ scope           │
+        ┌─────────────────┼─────────────────┤
+        ▼                 ▼                 ▼
+   ┌─────────┐      ┌───────────┐    ┌───────────┐
+   │ LAYER 1 │      │  LAYER 3  │    │  LAYER 4  │
+   │Collectors│────▶│  Analyst  │───▶│Synthesizer│
+   └─────────┘ sig  └───────────┘ cl └───────────┘
+        │                 │                 │
+        ▼                 ▼                 ▼
+   ┌─────────┐      ┌───────────┐    ┌───────────┐
+   │ LAYER 2 │      │  Pattern  │    │  Briefs   │
+   │  Store  │◀─────│   Match   │    │  Output   │
+   └─────────┘      └───────────┘    └───────────┘
+        ▲                                   │
+        │           ┌───────────┐           │
+        └───────────│  LAYER 5  │◀──────────┘
+                    │  Human    │
+                    │ Feedback  │───────────┐
+                    └───────────┘           │
+                          │                 │
+                          └─────────────────┘
+                            (refines scope)
 ```
 
 ---
 
 ## Agent Roles
 
-### Layer 0: Data Sources (No Agent — Infrastructure)
+### Layer 0: Problem Framing ("Scope the Hunt")
+**Requires LLM:** Yes (conversational)
+**Purpose:** Help user define the observation space BEFORE collection begins
+**When:** Always first. No signals collected until scope is defined.
+
+#### Agent: Problem Framing Agent
+```yaml
+role: problem_framing_agent
+purpose: Interactive session to define what latent demand we're hunting
+input: Conversation with user
+model_tier: medium-high (needs good conversation + reasoning)
+output: Scope Definition Document
+```
+
+**Framing Questions (guided conversation):**
+
+1. **Domain/Vertical**
+   - "What space are you curious about?" (e.g., fintech, health, productivity, B2B SaaS)
+   - "Any specific sub-segments?" (e.g., not all health — just chronic disease management)
+
+2. **Hypothesis (or lack thereof)**
+   - "Do you have a hunch about unmet needs here, or are you exploring blind?"
+   - "What made you curious about this space?"
+
+3. **Market Position**
+   - "Looking for gaps in existing markets, or entirely new whitespace?"
+   - "Are there incumbents you think are missing something?"
+
+4. **Signal Priorities**
+   - "What signals matter most to you?" (frustration, failed products, regulatory shifts, behavior changes)
+   - "Anything to ignore or deprioritize?"
+
+5. **Time Horizon**
+   - "Interested in emerging-right-now or slow-brewing trends?"
+   - "How far back should we look for failed attempts?"
+
+6. **Constraints**
+   - "Any geographies to focus on or exclude?"
+   - "Budget/resource constraints that would make certain opportunities irrelevant?"
+
+7. **Success Criteria**
+   - "What would a useful output look like for you?"
+   - "Are you looking to build something, invest, advise, or just understand?"
+
+**Output: Scope Definition Document**
+```yaml
+scope_id: unique identifier
+created: timestamp
+domain: string
+sub_segments: string[]
+hypothesis: string | null
+market_position: enum [gap_in_existing, whitespace, both]
+signal_priorities:
+  - type: string
+    weight: float
+geographic_focus: string[]
+time_horizon:
+  lookback_months: int
+  trend_type: enum [emerging, brewing, both]
+success_criteria: string
+constraints: string[]
+```
+
+This scope document is passed to all downstream agents — collectors filter by it, analyst weighs signals according to it, briefs are framed around it.
+
+---
+
+### Layer 0.5: Data Sources (No Agent — Infrastructure)
 **Type:** Scrapers, APIs, RSS feeds, cron jobs
 **Requires LLM:** No
 **Implementation:** Python scripts, scheduled tasks
@@ -250,6 +329,7 @@ def llm_call(system_prompt: str, user_message: str, model_config: dict) -> str:
 ### Model Allocation Strategy
 | Agent | Model Tier | Reasoning |
 |-------|------------|-----------|
+| **Problem Framing Agent** | **Medium-High** | Conversational, needs good reasoning |
 | Frustration Scanner | Small | High volume, simple classification |
 | Failure Tracker | Medium | Needs cause analysis |
 | Environment Monitor | Medium | Context understanding |
@@ -262,6 +342,7 @@ def llm_call(system_prompt: str, user_message: str, model_config: dict) -> str:
 ## Implementation Phases
 
 ### Phase 1: MVP (Week 1)
+- [ ] **Problem Framing Agent** (always runs first)
 - [ ] Signal Store (SQLite)
 - [ ] 1 Collector (Frustration Scanner — Reddit + HN)
 - [ ] Analyst Agent (Convergence Analyst)
@@ -299,6 +380,7 @@ ldds/
 ├── agents/
 │   ├── __init__.py
 │   ├── base.py                # Base agent class
+│   ├── problem_framing.py     # Layer 0 — runs first
 │   ├── frustration_scanner.py
 │   ├── failure_tracker.py
 │   ├── environment_monitor.py
